@@ -94,8 +94,9 @@ int main(int argc, char **argv)
     char *api_key = getenv("PUNKAPI_KEY");
     if (!api_key) {
         fprintf(stdout,
-            "You need to register your PunkAPI key in the environment variable"
-            "\nPUNKAPI_KEY. You can obtain your key at: https://punkapi.com\n");
+                "You need to register your PunkAPI key in the environment"
+                " variable\nPUNKAPI_KEY. You can obtain your key at:"
+                "https://punkapi.com\n");
         return EXIT_FAILURE;
     }
 
@@ -139,18 +140,30 @@ int main(int argc, char **argv)
     /* prepare request URL */
     char *request_url = NULL;
     if (flags.random) {
-        request_url = calloc(
-            8 + strlen(api_key) + 1 + strlen(punkapi_endpoint) + 7 + 1,
-            sizeof(char)
+        request_url =
+            calloc(
+                8 + strlen(api_key) + 1 + strlen(punkapi_endpoint) + 7 + 1,
+                sizeof(char)
+            );
+        sprintf(
+            request_url,
+            "https://%s@%s/random",
+            api_key,
+            punkapi_endpoint
         );
-        sprintf(request_url, "https://%s@%s/random", api_key, punkapi_endpoint);
     } else {
-        request_url = calloc(
-            8 + strlen(api_key) + 1 + strlen(punkapi_endpoint) + 22 + 1,
-            sizeof(char)
-        );
-        sprintf(request_url, "https://%s@%s?page=%d&per_page=%d",
-            api_key, punkapi_endpoint, flags.page, flags.items
+        request_url =
+            calloc(
+                8 + strlen(api_key) + 1 + strlen(punkapi_endpoint) + 22 + 1,
+                sizeof(char)
+            );
+        sprintf(
+            request_url,
+            "https://%s@%s?page=%d&per_page=%d",
+            api_key,
+            punkapi_endpoint,
+            flags.page,
+            flags.items
         );
     }
 
