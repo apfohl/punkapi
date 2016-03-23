@@ -50,7 +50,8 @@ size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata)
     return realsize;
 }
 
-int perform_api_request(const char *endpoint, struct buffer *buffer)
+int perform_api_request(const char *endpoint, struct buffer *buffer,
+    char *errbuf)
 {
     /* initialize cURL */
     CURL *curl = curl_easy_init();
@@ -62,6 +63,9 @@ int perform_api_request(const char *endpoint, struct buffer *buffer)
     curl_easy_setopt(curl, CURLOPT_URL, endpoint);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, buffer);
+    curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errbuf);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
 
     /* perform cURL request */
     CURLcode res = curl_easy_perform(curl);
@@ -94,8 +98,8 @@ int main(int argc, char **argv)
     char *api_key = getenv("PUNKAPI_KEY");
     if (!api_key) {
         fprintf(stdout,
-                "You need to register your PunkAPI key in the environment"
-                " variable\nPUNKAPI_KEY. You can obtain your key at:"
+                "You need to register your PunkAPI key in the environment "
+                "variable\nPUNKAPI_KEY. You can obtain your key at: "
                 "https://punkapi.com\n");
         return EXIT_FAILURE;
     }
@@ -168,10 +172,17 @@ int main(int argc, char **argv)
     }
 
     /* perform API request */
-    if (perform_api_request(request_url, &buffer) == -1) {
+    char errbuf[CURL_ERROR_SIZE];
+    errbuf[0] = '\0';
+
+    if (perform_api_request(request_url, &buffer, errbuf) == -1) {
+        fprintf(stderr, "ERROR: %s\n", errbuf);
+
         if (buffer.data) {
             free(buffer.data);
         }
+
+        free(request_url);
 
         return EXIT_FAILURE;
     }
