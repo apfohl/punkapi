@@ -11,12 +11,22 @@ static const char *version = VERSION;
 static const char *version = "UNKNOWN";
 #endif
 
+/* operational flags */
 struct flags {
     unsigned int random;
     unsigned int page;
     unsigned int items;
+    unsigned int insecure;
 };
 
+struct flags flags = {
+    .random = 0,
+    .page = 1,
+    .items = 25,
+    .insecure = 0
+};
+
+/* dynamic buffer */
 struct buffer {
     size_t size;
     char *data;
@@ -29,7 +39,8 @@ void help(void)
         "OPTIONS:\n"
         "  -r        \tGet a random beer\n"
         "  -p <page> \tGet all beers at the given page\n"
-        "  -i <items>\tSet the number of beers per page\n";
+        "  -i <items>\tSet the number of beers per page\n"
+        "  -k        \tUse insecure connection\n";
 
     fprintf(stdout, "PunkAPI %s\n\n%s", version, usage);
 }
@@ -64,8 +75,11 @@ int perform_api_request(const char *endpoint, struct buffer *buffer,
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, buffer);
     curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errbuf);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+
+    if (flags.insecure) {
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+    }
 
     /* perform cURL request */
     CURLcode res = curl_easy_perform(curl);
@@ -107,16 +121,9 @@ int main(int argc, char **argv)
     /* PunkAPI JSON API HTTP endpoint */
     const char *punkapi_endpoint = "punkapi.com/api/v1/beers";
 
-    /* operational flags */
-    struct flags flags = {
-        .random = 0,
-        .page = 1,
-        .items = 25
-    };
-
     /* parse command line */
     int ch;
-    while ((ch = getopt(argc, argv, "rp:i:h")) != -1) {
+    while ((ch = getopt(argc, argv, "rp:i:hk")) != -1) {
         switch (ch) {
             case 'r':
                 flags.random = 1;
@@ -130,6 +137,9 @@ int main(int argc, char **argv)
             case 'h':
                 help();
                 return EXIT_SUCCESS;
+            case 'k':
+                flags.insecure = 1;
+                break;
             default:
                 help();
                 return EXIT_FAILURE;
