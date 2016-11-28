@@ -96,12 +96,12 @@ int perform_api_request(const char *endpoint, struct buffer *buffer,
 
 void print_beers(struct jzon *jzon)
 {
-    if (jzon_is_object(jzon)) {
-        fprintf(stdout, "%s\n", jzon_object_get(jzon, "name")->string);
-    } else if (jzon_is_array(jzon)) {
-        for (int i = 0; i < jzon_array_size(jzon); i++) {
-            struct jzon *beer = jzon_array_get(jzon, i);
-            fprintf(stdout, "%s\n", jzon_object_get(beer, "name")->string);
+    if (jzon_is_object(jzon, NULL)) {
+        fprintf(stdout, "%s\n", jzon_object_get(jzon, "name", NULL)->string);
+    } else if (jzon_is_array(jzon, NULL)) {
+        for (int i = 0; i < jzon_array_size(jzon, NULL); i++) {
+            struct jzon *beer = jzon_array_get(jzon, i, NULL);
+            fprintf(stdout, "%s\n", jzon_object_get(beer, "name", NULL)->string);
         }
     }
 }
@@ -206,7 +206,7 @@ int main(int argc, char **argv)
     buffer.size += 1;
 
     /* JZON parse API response */
-    struct jzon *jzon = jzon_parse(buffer.data);
+    struct jzon *jzon = jzon_parse(buffer.data, NULL);
 
     /* cleanup buffer */
     free(buffer.data);
