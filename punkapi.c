@@ -96,9 +96,7 @@ int perform_api_request(const char *endpoint, struct buffer *buffer,
 
 void print_beers(struct jzon *jzon)
 {
-    if (jzon_is_object(jzon, NULL)) {
-        fprintf(stdout, "%s\n", jzon_object_get(jzon, "name", NULL)->string);
-    } else if (jzon_is_array(jzon, NULL)) {
+    if (jzon_is_array(jzon, NULL)) {
         for (int i = 0; i < jzon_array_size(jzon, NULL); i++) {
             struct jzon *beer = jzon_array_get(jzon, i, NULL);
             fprintf(stdout, "%s\n", jzon_object_get(beer, "name", NULL)->string);
@@ -108,18 +106,8 @@ void print_beers(struct jzon *jzon)
 
 int main(int argc, char **argv)
 {
-    /* obtain PunkAPI key from environment */
-    char *api_key = getenv("PUNKAPI_KEY");
-    if (!api_key) {
-        fprintf(stdout,
-                "You need to register your PunkAPI key in the environment "
-                "variable\nPUNKAPI_KEY. You can obtain your key at: "
-                "https://punkapi.com\n");
-        return EXIT_FAILURE;
-    }
-
     /* PunkAPI JSON API HTTP endpoint */
-    const char *punkapi_endpoint = "punkapi.com/api/v1/beers";
+    const char *punkapi_endpoint = "api.punkapi.com/v2/beers";
 
     /* parse command line */
     int ch;
@@ -156,25 +144,23 @@ int main(int argc, char **argv)
     if (flags.random) {
         request_url =
             calloc(
-                8 + strlen(api_key) + 1 + strlen(punkapi_endpoint) + 7 + 1,
+                8 + strlen(punkapi_endpoint) + 7 + 1,
                 sizeof(char)
             );
         sprintf(
             request_url,
-            "https://%s@%s/random",
-            api_key,
+            "https://%s/random",
             punkapi_endpoint
         );
     } else {
         request_url =
             calloc(
-                8 + strlen(api_key) + 1 + strlen(punkapi_endpoint) + 22 + 1,
+                8 + strlen(punkapi_endpoint) + 22 + 1,
                 sizeof(char)
             );
         sprintf(
             request_url,
-            "https://%s@%s?page=%d&per_page=%d",
-            api_key,
+            "https://%s?page=%d&per_page=%d",
             punkapi_endpoint,
             flags.page,
             flags.items
@@ -184,7 +170,6 @@ int main(int argc, char **argv)
     /* perform API request */
     char errbuf[CURL_ERROR_SIZE];
     errbuf[0] = '\0';
-
     if (perform_api_request(request_url, &buffer, errbuf) == -1) {
         fprintf(stderr, "ERROR: %s\n", errbuf);
 
@@ -207,6 +192,12 @@ int main(int argc, char **argv)
 
     /* JZON parse API response */
     struct jzon *jzon = jzon_parse(buffer.data, NULL);
+    if (!jzon) {
+        fprintf(stderr, "ERROR: %s\n", "JSON data could not get parsed");
+        free(buffer.data);
+
+        return EXIT_FAILURE;
+    }
 
     /* cleanup buffer */
     free(buffer.data);
